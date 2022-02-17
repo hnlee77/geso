@@ -12,49 +12,44 @@ def plot_info():
 
     # plt.subplots_adjust(wspace=0.5, hspace=0.2)
 
-    # # Position
-    # plt.figure()
+    # Position
+    plt.figure()
 
-    # ax = plt.subplot(311)
-    # for i, _label in enumerate(["x", "y", "z"]):
-    #     if i != 0:
-    #         plt.subplot(311+i, sharex=ax)
-    #     plt.plot(data["t"], data["x"]["pos"][:, i, 0], "k", label=_label)
-    #     plt.plot(data["t"], data["ref"][:, i, 0], "r--", label=_label+" (cmd)")
-    #     plt.legend(loc="upper right")
-    #     if i == 0:
-    #         plt.ylim([-1, 4])
-    #     elif i == 1:
-    #         plt.ylim([-6, 1])
-    #     else:
-    #         plt.ylim([-14, -8])
-    # # plt.axvspan(3, 3.042, alpha=0.2, color="b")
-    # # plt.axvline(3.042, alpha=0.8, color="b", linewidth=0.5)
+    ax = plt.subplot(311)
+    for i, _label in enumerate(["x", "y", "z"]):
+        if i != 0:
+            plt.subplot(311+i, sharex=ax)
+        plt.plot(data["t"], data["x"]["pos"][:, i, 0], "k", label=_label)
+        plt.plot(data["t"], data["ref"][:, i, 0], "r--", label=_label+" (cmd)")
+        plt.legend(loc="upper right")
+        # plt.ylim([-5, 5])
+    # plt.axvspan(3, 3.042, alpha=0.2, color="b")
+    # plt.axvline(3.042, alpha=0.8, color="b", linewidth=0.5)
 
-    # # plt.axvspan(6, 6.011, alpha=0.2, color="b")
-    # # plt.axvline(6.011, alpha=0.8, color="b", linewidth=0.5)
+    # plt.axvspan(6, 6.011, alpha=0.2, color="b")
+    # plt.axvline(6.011, alpha=0.8, color="b", linewidth=0.5)
 
-    # # plt.annotate("Rotor 0 fails", xy=(3, 0), xytext=(3.5, 0.5),
-    # #              arrowprops=dict(arrowstyle='->', lw=1.5))
-    # # plt.annotate("Rotor 2 fails", xy=(6, 0), xytext=(7.5, 0.2),
-    # #              arrowprops=dict(arrowstyle='->', lw=1.5))
-    # plt.gcf().supxlabel("Time, sec")
-    # plt.gcf().supylabel("Position, m")
-    # plt.tight_layout()
+    # plt.annotate("Rotor 0 fails", xy=(3, 0), xytext=(3.5, 0.5),
+    #              arrowprops=dict(arrowstyle='->', lw=1.5))
+    # plt.annotate("Rotor 2 fails", xy=(6, 0), xytext=(7.5, 0.2),
+    #              arrowprops=dict(arrowstyle='->', lw=1.5))
+    plt.gcf().supxlabel("Time, sec")
+    plt.gcf().supylabel("Position, m")
+    plt.tight_layout()
 
-    # # velocity
-    # plt.figure()
-    # # plt.ylim([-5, 5])
+    # velocity
+    plt.figure()
+    # plt.ylim([-5, 5])
 
-    # ax = plt.subplot(311)
-    # for i, _label in enumerate([r"$V_x$", r"$V_y$", r"$V_z$"]):
-    #     if i != 0:
-    #         plt.subplot(311+i, sharex=ax)
-    #     plt.plot(data["t"], data["x"]["vel"][:, i, 0], "k", label=_label)
-    #     plt.legend(loc="upper right")
-    # plt.gcf().supxlabel("Time, sec")
-    # plt.gcf().supylabel("Velocity, m/s")
-    # plt.tight_layout()
+    ax = plt.subplot(311)
+    for i, _label in enumerate([r"$V_x$", r"$V_y$", r"$V_z$"]):
+        if i != 0:
+            plt.subplot(311+i, sharex=ax)
+        plt.plot(data["t"], data["x"]["vel"][:, i, 0], "k", label=_label)
+        plt.legend(loc="upper right")
+    plt.gcf().supxlabel("Time, sec")
+    plt.gcf().supylabel("Velocity, m/s")
+    plt.tight_layout()
 
     # euler angles
     plt.figure()

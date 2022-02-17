@@ -34,9 +34,9 @@ cfg = ftc.config.load()
 class MyEnv(BaseEnv):
     def __init__(self):
         super().__init__(dt=0.01, max_t=20, solver="rk4")
-        init_pos = np.vstack((0, 0, -10))
+        init_pos = np.vstack((0, 0, 0))
         # init_ang = np.deg2rad([0, 0, 0])*(np.random.rand(3) - 0.5)
-        init_ang = np.deg2rad([20, 30, 10])*(np.random.rand(3) - 0.5)
+        init_ang = np.deg2rad([20, 30, 0])*(np.random.rand(3) - 0.5)
         init_quat = (angle2quat(init_ang[2], init_ang[1], init_ang[0]))
         self.plant = Multicopter(
             pos=init_pos,
@@ -48,18 +48,18 @@ class MyEnv(BaseEnv):
         self.rotor_n = self.plant.mixer.B.shape[1]
 
         n = 3
-        self.obsv = BaseSystem(np.zeros((3*(n + 1), 1)))
-        self.B = np.zeros((3*(n+1), 3))
-        self.C = np.zeros((3*(n+1), 3)).T
-        self.B[0:3, 0:3] = np.eye(3)
-        self.C[0:3, 0:3] = np.eye(3)
-        self.A = np.eye(3*(n+1), 3*(n+1), 3)
+        self.obsv = BaseSystem(np.zeros((4*(n + 1), 1)))
+        self.B = np.zeros((4*(n+1), 4))
+        self.C = np.zeros((4*(n+1), 4)).T
+        self.B[0:4, 0:4] = np.eye(4)
+        self.C[0:4, 0:4] = np.eye(4)
+        self.A = np.eye(4*(n+1), 4*(n+1), 4)
         wb = 20
         clist = np.array([4, 6, 4, 1])
         llist = clist * wb ** np.array([1, 2, 3, 4])
         L = []
         for lval in llist:
-            L.append(lval*np.eye(3))
+            L.append(lval*np.eye(4))
         self.L = np.vstack(L)
         self.obsv_agent = Obsv_agent()
 
@@ -90,13 +90,14 @@ class MyEnv(BaseEnv):
         W = self.fdi.get_true(t)
         What = self.fdi.get(t)
         fault = W - np.eye(self.rotor_n)
-        # pos = self.plant.pos.state
+        pos = self.plant.pos.state
         # vel = self.plant.vel.state
-        omega = self.plant.omega.state
+        quat = self.plant.quat.state
+        ang = quat2angle(quat)
 
         x_hat = self.obsv.state
         y_hat = self.C.dot(x_hat)
-        dhat = x_hat[3:6]
+        dhat = x_hat[4:8]
 
         # # PID position control
         # phi_des = - 0.02*(pos[1] - ref[1]) - 0.1*vel[1]
@@ -104,10 +105,9 @@ class MyEnv(BaseEnv):
         # ang_des = np.vstack((phi_des, theta_des, 0))
 
         ang_des = np.vstack((0, 0, 0))
-        quat_des = angle2quat(ang_des[2], ang_des[1], ang_des[0])
-
-        u = self.obsv_agent.get_control(self.plant, self.obsv, quat_des)
-        forces = u + self.trim_forces
+        des = np.vstack((ref[2], ang_des))
+        u, u_star = self.obsv_agent.get_control(self.plant, self.obsv, des)
+        forces = u
         rotors_cmd = self.control_allocation(t, forces, What)
 
         # actuator saturation
@@ -121,8 +121,7 @@ class MyEnv(BaseEnv):
         rotors = self.fault_manager.get_faulty_input(t, rotors)
 
         self.plant.set_dot(t, rotors)
-        y = self.plant.J.dot(omega)
-        u_star = u[1:] - hat(omega).dot(self.plant.J).dot(omega)
+        y = np.vstack((pos[2], np.vstack(ang)))
         self.obsv.dot = (
             self.A.dot(x_hat)
             + self.B.dot(u_star) + self.L.dot(y - y_hat)
@@ -133,7 +132,7 @@ class MyEnv(BaseEnv):
                     dhat=dhat, d=d, W=W, What=What, ref=ref, ang_des=ang_des)
 
     def get_ref(self, t):
-        ref = np.vstack((2, -5, -12))
+        ref = np.vstack((0, 0, -2))
         return ref
 
 

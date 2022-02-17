@@ -1,18 +1,17 @@
 import numpy as np
 from numpy import sin, cos, tanh
-from fym.utils.rot import dcm2quat, quat2dcm, angle2quat, quat2angle
+from fym.utils.rot import angle2quat, quat2angle
 
 
 class Obsv_agent:
     def __init__(self):
-        self.K1 = 0.1*np.eye(3)
-        self.K2 = 0.5*np.eye(3)
+        self.K1 = np.diag([5, 1, 1, 10])
+        self.K2 = np.diag([5, 1, 1, 10])
 
     def get_f(self, plant):
         omega = plant.omega.state
-        Jx, Jy, Jz = plant.J
-        breakpoint()
-        return np.vstack((-9.81,
+        Jx, Jy, Jz = plant.J[0, 0], plant.J[1, 1], plant.J[2, 2]
+        return np.vstack((plant.g,
                           omega[1]*omega[2]*(Jy-Jz)/Jx,
                           omega[0]*omega[2]*(Jz-Jx)/Jy,
                           omega[0]*omega[1]*(Jx-Jy)/Jz
@@ -21,39 +20,24 @@ class Obsv_agent:
     def get_g(self, plant):
         quat = plant.quat.state
         ang = quat2angle(quat)
-        breakpoint()
-        Jx, Jy, Jz = plant.J
-        m = plant.m
-        return np.array([-cos(ang[2])*cos(ang[1])/m, 0, 0, 0],
-                        [0, 1/Jx, 0, 0],
-                        [0, 0, 1/Jy, 0]
-                        [0, 0, 0, 1/Jz])
+        Jx, Jy, Jz = plant.J[0, 0], plant.J[1, 1], plant.J[2, 2]
+        return np.diag([-cos(ang[2])*cos(ang[1])/plant.m, 1/Jx, 1/Jy, 1/Jz])
 
     def get_control(self, plant, obsv, ref):
-        q_d = ref
+        pos = plant.pos.state
+        vel = plant.vel.state
         quat = plant.quat.state
+        ang = quat2angle(quat)
         omega = plant.omega.state
-        q_0e = quat_error(quat, q_d)[0]
-        q_ve = quat_error(quat, q_d)[1:]
-        w_e = omega
-        dq_ve = (
-            0.5 * np.vstack((- q_ve.T, hat(q_ve) + q_0e*np.eye(3))).dot(w_e)[1:]
-        )
-        N = (
-            - hat(omega).dot(plant.J).dot(omega)
-            + plant.J.dot(self.K1).dot(dq_ve) + q_ve)
-        u_N = - N - self.K2.dot(w_e + self.K1.dot(q_ve))
-        u_E = - obsv.state[3:6]
-        torque = u_N + u_E
-        return np.vstack((0, torque))
-
-
-def quat_error(q, qd):
-    q0, qv = q[0], q[1:]
-    qd0, qdv = qd[0], qd[1:]
-    qe0 = q0 * qd0 + qv.T.dot(qdv)
-    qev = qd0 * qv - q0 * qdv + hat(qv).dot(qdv)
-    return np.vstack((qe0, qev))
+        e = np.vstack((pos[2], np.vstack(ang))) - ref
+        edot = np.vstack((vel[2], omega))
+        v = - self.K1.dot(e) - self.K2.dot(edot)
+        f = self.get_f(plant)
+        g = self.get_g(plant)
+        u_N = np.linalg.inv(g).dot(- f + v)
+        # u_E = -obsv.state[4:8]
+        u_star = np.linalg.inv(g).dot(v)
+        return u_N, u_star
 
 
 def hat(v):
