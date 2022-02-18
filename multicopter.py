@@ -118,8 +118,6 @@ class Multicopter(BaseEnv):
         k = 1
         dquat = dquat + k*eps*quat
         domega = self.Jinv.dot(M - np.cross(omega, J.dot(omega), axis=0))
-        # tau_d = self.get_tau_d(fault, rotors)
-        # domega = domega + np.linalg.inv(J).dot(tau_d)
 
         return dpos, dvel, dquat, domega
 
@@ -128,6 +126,7 @@ class Multicopter(BaseEnv):
         dots = self.deriv(*states, rotors)
         self.pos.dot, self.vel.dot, self.quat.dot, self.omega.dot = dots
 
-    def get_tau_d(self, fault, rotors):
-        LoE = fault
-        return self.mixer.B.dot(LoE.dot(rotors))[1:]
+    def get_d(self, W, rotors):
+        rotor_n = rotors.shape[0]
+        fault = W - np.eye(rotor_n)
+        return self.mixer.B.dot(fault.dot(rotors))

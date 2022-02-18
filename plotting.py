@@ -114,12 +114,11 @@ def plot_info():
 
     # Disturbances
     plt.figure()
-    # plt.ylim([-5, 5])
 
-    ax = plt.subplot(311)
+    ax = plt.subplot(411)
     for i in range(data["d"].shape[1]):
         if i != 0:
-            plt.subplot(311+i, sharex=ax)
+            plt.subplot(411+i, sharex=ax)
         plt.plot(data["t"], data["dhat"][:, i, 0], "k", label="Estimated")
         plt.plot(data["t"], data["d"][:, i, 0], "r--", label="Actual")
         if i == 0:
