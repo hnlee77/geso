@@ -5,10 +5,11 @@ from fym.core import BaseEnv, BaseSystem
 from fym.utils.rot import dcm2quat, quat2dcm, angle2quat, quat2angle
 
 import ftc
-import ftc.config
+
+import config
 
 
-cfg = ftc.config.load("models.multicopter")
+cfg = config.load("models.multicopter")
 
 
 class Mixer:
@@ -19,32 +20,38 @@ class Mixer:
     def __init__(self, d, c, b):
         rtype = cfg.mixer.rtype
 
-        if rtype == "quad":
+        if rtype == "quad-x":
             B = np.array(
-                [[1, 1, 1, 1],
-                 [0, -d, 0, d],
-                 [d, 0, -d, 0],
-                 [-c, c, -c, c]]
+                [[b, b, b, b],
+                 [-0.5*np.sqrt(2)*d, 0.5*np.sqrt(2)*d, 0.5*np.sqrt(2)*d, -0.5*np.sqrt(2)*d],
+                 [0.5*np.sqrt(2)*d, -0.5*np.sqrt(2)*d, 0.5*np.sqrt(2)*d, -0.5*np.sqrt(2)*d],
+                 [c, c, -c, -c]]
+            )
+
+        if rtype == "quad-+":
+            B = np.array(
+                [[b, b, b, b],
+                 [-d, d, 0, 0],
+                 [0, 0, d, -d],
+                 [c, c, -c, -c]]
             )
 
         elif rtype == "hexa-x":
-            b = 1
             B = np.array(
                 [[b, b, b, b, b, b],
                  [-b*d, b*d, b*d/2, -b*d/2, -b*d/2, b*d/2],
-                 [0, 0, b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2, b*d*np.sqrt(3)/2,
-                  -b*d*np.sqrt(3)/2],
-                 [c, -c, c, -c, -c, c]]
+                 [0, 0, b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2,
+                  b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2],
+                 [-c, c, -c, c, c, -c]]
             )
 
         elif rtype == "hexa-+":
-            b = 1
             B = np.array(
                 [[b, b, b, b, b, b],
-                 [0, 0, b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2, b*d*np.sqrt(3)/2,
-                  -b*d*np.sqrt(3)/2],
+                 [0, 0, b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2,
+                  b*d*np.sqrt(3)/2, -b*d*np.sqrt(3)/2],
                  [-b*d, b*d, b*d/2, -b*d/2, -b*d/2, b*d/2],
-                 [c, -c, c, -c, -c, c]]
+                 [-c, c, -c, c, c, -c]]
             )
             self.b_gyro = np.vstack((1, -1, 1, -1, 1, -1))
 

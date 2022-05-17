@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import fym
 from fym.core import BaseEnv, BaseSystem
 from fym.utils.rot import dcm2quat, quat2dcm, angle2quat, quat2angle
-import ftc.config
 from ftc.faults.actuator import LoE
 from ftc.faults.manager import LoEManager
 from ftc.agents.CA import ConstrainedCA
@@ -12,6 +11,7 @@ from ftc.agents.CA import ConstrainedCA
 from multicopter import Multicopter
 import plotting
 from dobc import DOBC
+import config
 
 # plt.rc("font", **{
 #     "family": "sans-serif",
@@ -22,14 +22,14 @@ plt.rc("lines", linewidth=1)
 plt.rc("axes", grid=True)
 plt.rc("grid", linestyle="--", alpha=0.8)
 
-cfg = ftc.config.load()
+cfg = config.load()
 
 
 class MyEnv(BaseEnv):
     def __init__(self):
         super().__init__(dt=0.01, max_t=20)
         init_pos = np.vstack((0, 0, 0))
-        init_ang = np.deg2rad([20, 30, 10])*(np.random.rand(3) - 0.5)
+        init_ang = np.deg2rad([10, 10, 10])*(np.random.rand(3) - 0.5)
         init_quat = (angle2quat(init_ang[2], init_ang[1], init_ang[0]))
         self.plant = Multicopter(
             pos=init_pos,
@@ -39,7 +39,7 @@ class MyEnv(BaseEnv):
         )
         self.rotor_n = self.plant.mixer.B.shape[1]
 
-        n = 3  # (n-1)-order derivative of disturbance
+        n = 2  # (n-1)-order derivative of disturbance
         l = 4  # output dimension
         self.obsv = BaseSystem(np.zeros((l*(n + 1), 1)))
         self.B = np.zeros((l*(n+1), l))
@@ -48,8 +48,15 @@ class MyEnv(BaseEnv):
         self.C[0:l, 0:l] = np.eye(l)
         self.A = np.eye(l*(n+1), l*(n+1), l)
         wb = 20
-        clist = np.array([4, 6, 4, 1])
-        llist = clist * wb ** np.array([1, 2, 3, 4])
+        if n == 3:
+            clist = np.array([4, 6, 4, 1])
+            llist = clist * wb ** np.array([1, 2, 3, 4])
+        elif n == 2:
+            clist = np.array([3, 3, 1])
+            llist = clist * wb ** np.array([1, 2, 3])
+        elif n == 1:
+            clist = np.array([2, 1])
+            llist = clist * wb ** np.array([1, 2])
         L = []
         for lval in llist:
             L.append(lval*np.eye(l))
@@ -65,7 +72,7 @@ class MyEnv(BaseEnv):
         self.sensor_faults = []
         self.fault_manager = LoEManager([
             LoE(time=3, index=0, level=0.5),
-            # LoE(time=6, index=2, level=0.1),
+            LoE(time=6, index=2, level=0.1),
         ], no_act=self.rotor_n)
 
         # Define FDI
@@ -134,7 +141,7 @@ class MyEnv(BaseEnv):
 def exp_run(loggerpath):
     env = MyEnv()
     env.logger = fym.Logger(loggerpath)
-    # env.logger.set_info(cfg=ftc.config.load())
+    # env.logger.set_info(cfg=config.load())
 
     env.reset()
 
