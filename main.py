@@ -107,11 +107,11 @@ class MyEnv(BaseEnv):
                                                inner_des, isdob=True)
         rotors_cmd = self.control_allocation(t, forces, What)
 
+        # disturbances by faults
+        d = self.plant.get_d(W, rotors_cmd)
+
         # actuator saturation
         rotors = np.clip(rotors_cmd, 0, self.plant.rotor_max)
-
-        # disturbances by faults
-        d = self.plant.get_d(W, rotors)
 
         # Set actuator faults
         rotors = self.fault_manager.get_faulty_input(t, rotors)
